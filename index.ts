@@ -5,3 +5,5 @@ export type {
 	WebhookEventMap,
 	WebhookEventType
 } from './lib/types'
+
+export { createEventDispatcher } from './lib/utils'

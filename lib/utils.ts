@@ -1,4 +1,4 @@
-import type { DB, WebhookProviders } from './types'
+import type { DB, WebhookEvent, WebhookEventMap, WebhookEventType, WebhookProviders } from './types'
 
 export function createWebhookActions({
 	webhookProviders,
@@ -96,4 +96,44 @@ export function createWebhookActions({
 			})
 		}
 	}
+}
+
+export function createEventDispatcher<
+	EventType extends WebhookEventMap,
+	Platform extends WebhookEventType
+>(type: Platform, eventHandlers: EventType) {
+	return {
+		async dispatchWebhookEvent<A extends keyof EventType>(
+			action: A,
+			// @ts-ignore
+			data: Parameters<EventType[A]>[0],
+			username: string
+		): Promise<void> {
+			// @ts-ignore
+			const event: WebhookEvent<A & string, Parameters<EventType[A]>[0]> = {
+				type,
+				action: action as A & string,
+				data,
+				username
+			}
+
+			logEvent(event)
+
+			await eventHandlers[action]?.(data, username)
+		}
+	}
+}
+
+export function logEvent<T extends string, D>(event: WebhookEvent<T, D>) {
+	const consoleWidth = process.stdout.columns || 80
+	const separator = '='.repeat(consoleWidth)
+	const userInfo = event.username ? `[${event.username}]` : ''
+
+	console.log(`\x1b[36m${separator}\x1b[0m`)
+	console.log(`\x1b[32m${event.type} ${event.action}\x1b[0m \x1b[33m${userInfo}\x1b[0m`)
+	console.log(`\x1b[36m${separator}\x1b[0m`)
+
+	console.dir(event.data, { depth: 1, colors: true })
+
+	console.log(`\x1b[36m${separator}\x1b[0m`)
 }
