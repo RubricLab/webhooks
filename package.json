@@ -7,11 +7,12 @@
     "clean": "rm -rf .next && rm -rf node_modules",
     "format": "bun x biome format --write .",
     "lint": "bun x biome check . && bun x biome lint .",
-    "lint:fix": "bun x biome check --fix --unsafe . && bun x biome lint --write --unsafe ."
+    "lint:fix": "bun x biome check --fix --unsafe . && bun x biome lint --write --unsafe .",
+    "generate:github": "bun run ts-to-zod"
   },
   "name": "@rubriclab/webhooks",
-  "version": "0.0.5",
-  "main": "index.ts",
+  "version": "0.0.6",
+  "main": "lib/index.ts",
   "dependencies": {
     "@rubriclab/package": "*"
   },
@@ -20,5 +21,8 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "devDependencies": {
+    "ts-to-zod": "^3.15.0"
   }
 }
