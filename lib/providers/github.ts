@@ -65,19 +65,7 @@ export function createGithubWebhookProvider<
 		},
 		async enable(args: TEnableArgs, { webhookUrl }: { webhookUrl: string }) {
 			const { githubAccessToken, repository } = await getEnableArgs(args)
-			console.log(
-				JSON.stringify({
-					name: 'web',
-					active: true,
-					events: [...new Set(events.map(event => allGithubEvents[event].event))],
-					config: {
-						url: webhookUrl,
-						content_type: 'json',
-						secret: webhookSecret,
-						insecure_ssl: '0'
-					}
-				})
-			)
+
 			const response = await fetch(`https://api.github.com/repos/${repository}/hooks`, {
 				method: 'POST',
 				headers: {
@@ -97,7 +85,6 @@ export function createGithubWebhookProvider<
 			})
 
 			if (!response.ok) {
-				console.log(await response.text())
 				throw new Error('Failed to enable webhook', { cause: response })
 			}
 		},

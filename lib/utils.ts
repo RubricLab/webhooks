@@ -68,7 +68,6 @@ export function createWebhooks<
 					}>
 				}
 			) {
-				console.log(request)
 				const {
 					webhooks: [provider]
 				} = await params
@@ -118,7 +117,6 @@ export function createWebhooks<
 				if (!webhookProvider) {
 					throw new Error(`Provider ${String(provider)} not found`)
 				}
-				console.log(`PROCESSING ENABLEMENT FOR ${String(provider)}, ${JSON.stringify(args)}`)
 				return webhookProvider.enable(args, {
 					webhookUrl: `${webhookUrl}/webhooks/${String(provider)}`
 				})
