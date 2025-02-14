@@ -84,7 +84,7 @@ export function createBrexWebhookProvider<
 		},
 		TEnableArgs
 	>({
-		async verify({ request }) {
+		async verify({ request: _request }) {
 			return true // TODO: Add verification
 		},
 		async enable(args: TEnableArgs, { webhookUrl }: { webhookUrl: string }) {
