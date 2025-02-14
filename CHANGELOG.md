@@ -1,3 +1,4 @@
+- [2025-02-14] [fix build](https://github.com/RubricLab/webhooks/commit/e784e216673eaea4d6845ffe123ce55634913d93)
 - [2025-02-14] [vercel webhooks](https://github.com/RubricLab/webhooks/commit/67290cf952b7d72cce1da5964ee4f2eee0c20fa3)
 - [2025-02-13] [cleanup](https://github.com/RubricLab/webhooks/commit/13bfd2b39e63450c109c8d605ad51833f7fecb14)
 - [2025-02-13] [webhooks rebuild](https://github.com/RubricLab/webhooks/commit/ea047b89e838af0dcfb68f809452b12498dd35c3)

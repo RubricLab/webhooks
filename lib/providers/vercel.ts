@@ -84,7 +84,7 @@ export function createVercelWebhookProvider<
 	T extends readonly (keyof typeof allVercelEvents)[],
 	TEnableArgs extends BaseEnableArgs
 >({
-	webhookSecret,
+	webhookSecret: _webhookSecret, // TODO: Add webhook secret
 	events,
 	getEnableArgs
 }: {
@@ -102,8 +102,8 @@ export function createVercelWebhookProvider<
 		},
 		TEnableArgs
 	>({
-		async verify({ request }) {
-			return true
+		async verify({ request: _request }) {
+			return true // TODO: Add verification
 		},
 		async enable(args: TEnableArgs, { webhookUrl }: { webhookUrl: string }) {
 			const { vercelApiKey, projectId, teamId } = await getEnableArgs(args)
