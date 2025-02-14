@@ -1,5 +1,6 @@
 import crypto from 'node:crypto'
 import type { components } from '@octokit/openapi-webhooks-types'
+import { Octokit } from 'octokit'
 import type { BaseEnableArgs } from '../types'
 import { createWebhookProvider } from '../utils'
 
@@ -66,27 +67,21 @@ export function createGithubWebhookProvider<
 		async enable(args: TEnableArgs, { webhookUrl }: { webhookUrl: string }) {
 			const { githubAccessToken, repository } = await getEnableArgs(args)
 
-			const response = await fetch(`https://api.github.com/repos/${repository}/hooks`, {
-				method: 'POST',
-				headers: {
-					Authorization: `Bearer ${githubAccessToken}`
-				},
-				body: JSON.stringify({
-					name: 'web',
-					active: true,
-					events: [...new Set(events.map(event => allGithubEvents[event].event))],
-					config: {
-						url: webhookUrl,
-						content_type: 'json',
-						secret: webhookSecret,
-						insecure_ssl: '0'
-					}
-				})
-			})
+			const octokit = new Octokit({ auth: githubAccessToken })
 
-			if (!response.ok) {
-				throw new Error('Failed to enable webhook', { cause: response })
-			}
+			await octokit.rest.repos.createWebhook({
+				owner: repository.split('/')[0] as string,
+				repo: repository.split('/')[1] as string,
+				name: 'web',
+				active: true,
+				events: [...new Set(events.map(event => allGithubEvents[event].event))],
+				config: {
+					url: webhookUrl,
+					content_type: 'json',
+					secret: webhookSecret,
+					insecure_ssl: '0'
+				}
+			})
 		},
 		events: Object.fromEntries(
 			events.map(event => [
