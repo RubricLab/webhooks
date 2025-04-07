@@ -1,9 +1,15 @@
 export type BaseEventMap = Record<string, unknown>
 export type BaseEnableArgs = Record<string, unknown>
-
-export type WebhookProvider<TEvents extends BaseEventMap, TEnableArgs extends BaseEnableArgs> = {
+export type BaseEnableResult = Record<string, unknown>
+export type BaseVerifyArgs = Record<string, unknown>
+export type WebhookProvider<
+	TEvents extends BaseEventMap,
+	TEnableArgs extends BaseEnableArgs,
+	TEnableResult extends BaseEnableResult
+> = {
 	verify: ({ request }: { request: Request }) => Promise<boolean>
-	enable: (args: TEnableArgs, { webhookUrl }: { webhookUrl: string }) => Promise<unknown>
+	enable: (args: TEnableArgs, { webhookUrl }: { webhookUrl: string }) => Promise<TEnableResult>
+	onEnable: (result: TEnableResult) => Promise<void>
 	events: {
 		[K in keyof TEvents]: {
 			switch: (event: Record<string, unknown>) => boolean
@@ -13,7 +19,7 @@ export type WebhookProvider<TEvents extends BaseEventMap, TEnableArgs extends Ba
 }
 
 export type WebhookEvent<
-	TProviders extends Record<string, WebhookProvider<BaseEventMap, BaseEnableArgs>>
+	TProviders extends Record<string, WebhookProvider<BaseEventMap, BaseEnableArgs, BaseEnableResult>>
 > = {
 	[P in keyof TProviders]: {
 		[E in keyof TProviders[P]['events']]: {
@@ -29,12 +35,24 @@ export type GithubWebhookEnableArgs = {
 }
 
 export type WebhookActions<
-	TProviders extends Record<string, WebhookProvider<BaseEventMap, BaseEnableArgs>>
+	TProviders extends Record<string, WebhookProvider<BaseEventMap, BaseEnableArgs, BaseEnableResult>>
 > = {
 	enableWebhook: <TProvider extends keyof TProviders>(args: {
 		provider: TProvider
-		args: TProviders[TProvider] extends WebhookProvider<BaseEventMap, infer TEnableArgs>
+		args: TProviders[TProvider] extends WebhookProvider<
+			BaseEventMap,
+			infer TEnableArgs,
+			infer TEnableResult
+		>
 			? TEnableArgs
 			: never
-	}) => Promise<unknown>
+	}) => Promise<
+		TProviders[TProvider] extends WebhookProvider<
+			BaseEventMap,
+			infer TEnableArgs,
+			infer TEnableResult
+		>
+			? TEnableResult
+			: never
+	>
 }

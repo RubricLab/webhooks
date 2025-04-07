@@ -1,7 +1,7 @@
 import crypto from 'node:crypto'
 import type { components } from '@octokit/openapi-webhooks-types'
 import { Octokit } from 'octokit'
-import type { BaseEnableArgs } from '../types'
+import type { BaseEnableArgs, BaseVerifyArgs } from '../types'
 import { createWebhookProvider } from '../utils'
 
 type schemas = components['schemas']
@@ -31,26 +31,32 @@ const allGithubEvents = {
 
 export function createGithubWebhookProvider<
 	T extends readonly (keyof typeof allGithubEvents)[],
-	TEnableArgs extends BaseEnableArgs
+	TEnableArgs extends BaseEnableArgs,
+	TVerifyArgs extends BaseVerifyArgs
 >({
-	webhookSecret,
 	events,
-	getEnableArgs
+	getEnableArgs,
+	getVerifyArgs
 }: {
-	webhookSecret: string
 	events: T
 	getEnableArgs: (args: TEnableArgs) => Promise<{
 		githubAccessToken: string
 		repository: `${string}/${string}`
+		webhookSecret: string
+	}>
+	getVerifyArgs: (args: TVerifyArgs) => Promise<{
+		webhookSecret: string
 	}>
 }) {
 	return createWebhookProvider<
 		{
 			[K in T[number]]: Awaited<ReturnType<(typeof allGithubEvents)[K]['parse']>>
 		},
-		TEnableArgs
+		TEnableArgs,
+		TVerifyArgs,
 	>({
-		async verify({ request }) {
+		async verify({ args, request }) {
+			const { webhookSecret } = await getVerifyArgs(args)
 			const signature = request.headers.get('x-hub-signature-256')
 			if (!signature) return false
 

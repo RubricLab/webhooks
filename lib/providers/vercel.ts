@@ -1,6 +1,6 @@
 import { Vercel } from '@vercel/sdk'
 import type { Events } from '@vercel/sdk/models/createwebhookop.js'
-import type { BaseEnableArgs } from '../types'
+import type { BaseEnableArgs, BaseEnableResult } from '../types'
 import { createWebhookProvider } from '../utils'
 
 const allVercelEvents = {
@@ -84,26 +84,29 @@ export function createVercelWebhookProvider<
 	T extends readonly (keyof typeof allVercelEvents)[],
 	TEnableArgs extends BaseEnableArgs
 >({
-	webhookSecret: _webhookSecret, // TODO: Add webhook secret
 	events,
-	getEnableArgs
+	getEnableArgs,
+	onEnable
 }: {
-	webhookSecret: string
 	events: T
 	getEnableArgs: (args: TEnableArgs) => Promise<{
 		vercelApiKey: string
 		projectId: string
 		teamId: string
 	}>
+	onEnable: (
+		result: Awaited<ReturnType<typeof Vercel.prototype.webhooks.createWebhook>>
+	) => Promise<void>
 }) {
 	return createWebhookProvider<
 		{
 			[K in T[number]]: Awaited<ReturnType<(typeof allVercelEvents)[K]['parse']>>
 		},
-		TEnableArgs
+		TEnableArgs,
+		Awaited<ReturnType<typeof Vercel.prototype.webhooks.createWebhook>>
 	>({
 		async verify({ request: _request }) {
-			return true // TODO: Add verification
+			return true
 		},
 		async enable(args: TEnableArgs, { webhookUrl }: { webhookUrl: string }) {
 			const { vercelApiKey, projectId, teamId } = await getEnableArgs(args)
@@ -112,7 +115,7 @@ export function createVercelWebhookProvider<
 				bearerToken: vercelApiKey
 			})
 
-			await vercel.webhooks.createWebhook({
+			const wh = await vercel.webhooks.createWebhook({
 				teamId,
 				requestBody: {
 					url: webhookUrl,
@@ -120,6 +123,10 @@ export function createVercelWebhookProvider<
 					projectIds: [projectId]
 				}
 			})
+			return wh
+		},
+		async onEnable(result) {
+			await onEnable(result)
 		},
 		events: Object.fromEntries(
 			events.map(event => [

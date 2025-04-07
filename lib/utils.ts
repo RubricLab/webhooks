@@ -1,6 +1,8 @@
 import type {
 	BaseEnableArgs,
+	BaseEnableResult,
 	BaseEventMap,
+	BaseVerifyArgs,
 	WebhookActions,
 	WebhookEvent,
 	WebhookProvider
@@ -8,14 +10,18 @@ import type {
 
 export function createWebhookProvider<
 	TEvents extends BaseEventMap,
-	TEnableArgs extends BaseEnableArgs
+	TVerifyArgs extends BaseVerifyArgs,
+	TEnableArgs extends BaseEnableArgs,
+	TEnableResult extends BaseEnableResult
 >({
 	verify,
 	enable,
+	onEnable,
 	events
 }: {
-	verify: ({ request }: { request: Request }) => Promise<boolean>
-	enable: (args: TEnableArgs, { webhookUrl }: { webhookUrl: string }) => Promise<void>
+	verify: ({ args, request }: { args: TVerifyArgs; request: Request }) => Promise<boolean>
+	enable: (args: TEnableArgs, { webhookUrl }: { webhookUrl: string }) => Promise<TEnableResult>
+	onEnable: (result: TEnableResult) => Promise<void>
 	events: {
 		[K in keyof TEvents]: {
 			switch: (event: Record<string, unknown>) => boolean
@@ -26,13 +32,14 @@ export function createWebhookProvider<
 	return {
 		verify,
 		enable,
+		onEnable,
 		events
 	}
 }
 
 export function createWebhooks<
 	// biome-ignore lint/suspicious/noExplicitAny: not sure how to fix this
-	WebhookProviders extends Record<string, WebhookProvider<BaseEventMap, any>>
+	WebhookProviders extends Record<string, WebhookProvider<BaseEventMap, any, any>>
 >({
 	webhookProviders,
 	eventHandler,
@@ -41,21 +48,7 @@ export function createWebhooks<
 	webhookProviders: WebhookProviders
 	eventHandler: (event: WebhookEvent<WebhookProviders>) => Promise<void>
 	webhookUrl: string
-}): {
-	routes: {
-		POST: (
-			request: Request,
-			{
-				params
-			}: {
-				params: Promise<{
-					webhooks: [provider: keyof WebhookProviders]
-				}>
-			}
-		) => Promise<Response>
-	}
-	actions: WebhookActions<WebhookProviders>
-} {
+}) {
 	return {
 		routes: {
 			async POST(
@@ -117,10 +110,15 @@ export function createWebhooks<
 				if (!webhookProvider) {
 					throw new Error(`Provider ${String(provider)} not found`)
 				}
-				return webhookProvider.enable(args, {
+				const result = await webhookProvider.enable(args, {
 					webhookUrl: `${webhookUrl}/webhooks/${String(provider)}`
 				})
+				await webhookProvider.onEnable(result)
+				return result
 			}
+		} as WebhookActions<WebhookProviders>,
+		__types: {
+			events: undefined as unknown as WebhookEvent<WebhookProviders>
 		}
 	}
 }
