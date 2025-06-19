@@ -183,7 +183,7 @@ import { createVercelWebhookProvider } from '@rubriclab/webhooks'
 
 const vercelProvider = createVercelWebhookProvider({
 	webhookSecret: env.VERCEL_WEBHOOK_SECRET,
-	events: ['deployment_succeeded', 'deployment_failed'] as const,
+	events: ['deployment_created', 'deployment_succeeded'] as const,
 	getEnableArgs: async (args) => ({
 		vercelToken: env.VERCEL_API_KEY,
 		projectId: args.projectId as string
@@ -192,8 +192,8 @@ const vercelProvider = createVercelWebhookProvider({
 ```
 
 **Supported Events:**
-- `deployment_succeeded` - Successful deployments
-- `deployment_failed` - Failed deployments
+- `deployment_created` - Deployment created
+- `deployment_succeeded` - Deployment succeeded
 
 ### Brex
 
@@ -204,7 +204,7 @@ import { createBrexWebhookProvider } from '@rubriclab/webhooks'
 
 const brexProvider = createBrexWebhookProvider({
 	webhookSecret: env.BREX_WEBHOOK_SECRET,
-	events: ['card_created', 'transaction_created'] as const,
+	events: ['expense_payment_updated'] as const,
 	getEnableArgs: async (args) => ({
 		brexApiKey: env.BREX_API_KEY,
 		teamId: args.teamId as string
@@ -213,8 +213,7 @@ const brexProvider = createBrexWebhookProvider({
 ```
 
 **Supported Events:**
-- `card_created` - New cards created
-- `transaction_created` - New transactions
+- `expense_payment_updated` - Expense payment updated
 
 ## Custom Providers
 
@@ -251,24 +250,6 @@ const customProvider = createWebhookProvider({
 			}).parse(payload)
 		}
 	}
-})
-```
-
-## Type Safety
-
-The webhooks package provides full TypeScript support with inferred types:
-
-```ts
-// Event types are automatically inferred
-type WebhookEvent = {
-	type: 'github/push' | 'github/issue_opened' | 'vercel/deployment_succeeded'
-	data: PushEvent | IssueEvent | DeploymentEvent
-}
-
-// Provider-specific enable arguments are type-safe
-await actions.enableWebhook({
-	provider: 'github',
-	args: { repository: 'owner/repo' } // TypeScript ensures correct args
 })
 ```
 
