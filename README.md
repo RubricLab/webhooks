@@ -69,9 +69,9 @@ const customWebhookProvider = createWebhookProvider({
 })
 ```
 
-### Create Webhook Routes
+### Configure Webhooks
 
-Set up webhook routes for Next.js with built-in providers.
+Set up webhook routes and actions for Next.js with built-in providers.
 
 ```ts
 // lib/webhooks.ts
@@ -94,7 +94,7 @@ const vercelProvider = createVercelWebhookProvider({
 	webhookSecret: env.VERCEL_WEBHOOK_SECRET,
 	events: ['deployment_succeeded'] as const,
 	getEnableArgs: async (args) => ({
-		vercelToken: env.VERCEL_TOKEN,
+		vercelToken: env.VERCEL_API_KEY,
 		projectId: args.projectId as string
 	})
 })
@@ -140,7 +140,7 @@ import { actions } from '~/lib/webhooks'
 export const { enableWebhook } = actions
 ```
 
-### Use Webhooks
+### Create Webhook Routes
 
 ```ts
 // app/api/webhooks/[...webhooks]/route.ts
@@ -185,7 +185,7 @@ const vercelProvider = createVercelWebhookProvider({
 	webhookSecret: env.VERCEL_WEBHOOK_SECRET,
 	events: ['deployment_succeeded', 'deployment_failed'] as const,
 	getEnableArgs: async (args) => ({
-		vercelToken: env.VERCEL_TOKEN,
+		vercelToken: env.VERCEL_API_KEY,
 		projectId: args.projectId as string
 	})
 })
@@ -274,21 +274,34 @@ await actions.enableWebhook({
 
 ## Environment Variables
 
-Set up the following environment variables for the built-in providers:
+Add the following to your environment schema:
 
-```env
-# GitHub
-GITHUB_WEBHOOK_SECRET=your_webhook_secret
-GITHUB_ACCESS_TOKEN=your_access_token
+```ts
+// env.ts
+import { createEnv } from '@t3-oss/env-nextjs'
+import z from 'zod'
 
-# Vercel
-VERCEL_WEBHOOK_SECRET=your_webhook_secret
-VERCEL_TOKEN=your_vercel_token
+export default createEnv({
+	client: {
+		NEXT_PUBLIC_WEBHOOK_URL: z.string().min(1)
+	},
+	server: {
+		GITHUB_WEBHOOK_SECRET: z.string().min(1),
+		GITHUB_ACCESS_TOKEN: z.string().min(1),
+		VERCEL_WEBHOOK_SECRET: z.string().min(1),
+		VERCEL_API_KEY: z.string().min(1),
+		BREX_WEBHOOK_SECRET: z.string().min(1),
+		BREX_API_KEY: z.string().min(1)
+	},
+	runtimeEnv: {
+		NEXT_PUBLIC_WEBHOOK_URL: process.env.NEXT_PUBLIC_WEBHOOK_URL,
+		GITHUB_WEBHOOK_SECRET: process.env.GITHUB_WEBHOOK_SECRET,
+		GITHUB_ACCESS_TOKEN: process.env.GITHUB_ACCESS_TOKEN,
+		VERCEL_WEBHOOK_SECRET: process.env.VERCEL_WEBHOOK_SECRET,
+		VERCEL_API_KEY: process.env.VERCEL_API_KEY,
+		BREX_WEBHOOK_SECRET: process.env.BREX_WEBHOOK_SECRET,
+		BREX_API_KEY: process.env.BREX_API_KEY
+	}
+})
 
-# Brex
-BREX_WEBHOOK_SECRET=your_webhook_secret
-BREX_API_KEY=your_api_key
-
-# Base URL for webhook endpoints
-NEXT_PUBLIC_WEBHOOK_URL=https://example.com/api
 ```
