@@ -1,3 +1,4 @@
+- [2025-06-25] [Use package post-commit hooks](https://github.com/RubricLab/webhooks/commit/ecf7b1268171327a21232e6e142048a34bd2410a)
 - [2025-02-14] [fix build](https://github.com/RubricLab/webhooks/commit/b61b6a6c3f6177a4fc2308399dc569f86c389cff)
 - [2025-02-14] [brex webhook](https://github.com/RubricLab/webhooks/commit/2317b1182def818cde52e02ce2b093188a47b1b0)
 - [2025-02-14] [fix build](https://github.com/RubricLab/webhooks/commit/e784e216673eaea4d6845ffe123ce55634913d93)
