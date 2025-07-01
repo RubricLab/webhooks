@@ -7,25 +7,25 @@ import { createWebhookProvider } from '../utils'
 type schemas = components['schemas']
 
 const allGithubEvents = {
-	issue_opened: {
-		switch: (event: Record<string, unknown>) => event.action === 'opened',
-		parse: async (payload: Record<string, unknown>) => payload as schemas['webhook-issues-opened'],
-		event: 'issues'
-	},
 	issue_closed: {
-		switch: (event: Record<string, unknown>) => event.action === 'closed',
+		event: 'issues',
 		parse: async (payload: Record<string, unknown>) => payload as schemas['webhook-issues-closed'],
-		event: 'issues'
+		switch: (event: Record<string, unknown>) => event.action === 'closed'
+	},
+	issue_opened: {
+		event: 'issues',
+		parse: async (payload: Record<string, unknown>) => payload as schemas['webhook-issues-opened'],
+		switch: (event: Record<string, unknown>) => event.action === 'opened'
 	},
 	issue_reopened: {
-		switch: (event: Record<string, unknown>) => event.action === 'reopened',
+		event: 'issues',
 		parse: async (payload: Record<string, unknown>) => payload as schemas['webhook-issues-reopened'],
-		event: 'issues'
+		switch: (event: Record<string, unknown>) => event.action === 'reopened'
 	},
 	push: {
-		switch: (event: Record<string, unknown>) => 'head_commit' in event,
+		event: 'push',
 		parse: async (payload: Record<string, unknown>) => payload as schemas['webhook-push'],
-		event: 'push'
+		switch: (event: Record<string, unknown>) => 'head_commit' in event
 	}
 }
 
@@ -50,6 +50,41 @@ export function createGithubWebhookProvider<
 		},
 		TEnableArgs
 	>({
+		async enable(args: TEnableArgs, { webhookUrl }: { webhookUrl: string }) {
+			const { githubAccessToken, repository } = await getEnableArgs(args)
+
+			const octokit = new Octokit({ auth: githubAccessToken })
+
+			await octokit.rest.repos.createWebhook({
+				active: true,
+				config: {
+					content_type: 'json',
+					insecure_ssl: '0',
+					secret: webhookSecret,
+					url: webhookUrl
+				},
+				events: [...new Set(events.map(event => allGithubEvents[event].event))],
+				name: 'web',
+				owner: repository.split('/')[0] as string,
+				repo: repository.split('/')[1] as string
+			})
+		},
+		events: Object.fromEntries(
+			events.map(event => [
+				event,
+				{
+					parse: allGithubEvents[event].parse,
+					switch: allGithubEvents[event].switch
+				}
+			])
+		) as {
+			[K in T[number]]: {
+				switch: (event: Record<string, unknown>) => boolean
+				parse: (
+					input: Record<string, unknown>
+				) => Promise<Awaited<ReturnType<(typeof allGithubEvents)[K]['parse']>>>
+			}
+		},
 		async verify({ request }) {
 			const signature = request.headers.get('x-hub-signature-256')
 			if (!signature) return false
@@ -63,41 +98,6 @@ export function createGithubWebhookProvider<
 				new Uint8Array(Buffer.from(signature)),
 				new Uint8Array(Buffer.from(digest))
 			)
-		},
-		async enable(args: TEnableArgs, { webhookUrl }: { webhookUrl: string }) {
-			const { githubAccessToken, repository } = await getEnableArgs(args)
-
-			const octokit = new Octokit({ auth: githubAccessToken })
-
-			await octokit.rest.repos.createWebhook({
-				owner: repository.split('/')[0] as string,
-				repo: repository.split('/')[1] as string,
-				name: 'web',
-				active: true,
-				events: [...new Set(events.map(event => allGithubEvents[event].event))],
-				config: {
-					url: webhookUrl,
-					content_type: 'json',
-					secret: webhookSecret,
-					insecure_ssl: '0'
-				}
-			})
-		},
-		events: Object.fromEntries(
-			events.map(event => [
-				event,
-				{
-					switch: allGithubEvents[event].switch,
-					parse: allGithubEvents[event].parse
-				}
-			])
-		) as {
-			[K in T[number]]: {
-				switch: (event: Record<string, unknown>) => boolean
-				parse: (
-					input: Record<string, unknown>
-				) => Promise<Awaited<ReturnType<(typeof allGithubEvents)[K]['parse']>>>
-			}
 		}
 	})
 }

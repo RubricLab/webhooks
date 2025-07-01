@@ -5,7 +5,7 @@ import { createWebhookProvider } from '../utils'
 
 const allVercelEvents = {
 	deployment_created: {
-		switch: (event: Record<string, unknown>) => event.type === 'deployment.created',
+		event: 'deployment.created',
 		parse: async (payload: Record<string, unknown>) =>
 			payload as {
 				type: string
@@ -39,10 +39,10 @@ const allVercelEvents = {
 					regions: string[]
 				}
 			},
-		event: 'deployment.created'
+		switch: (event: Record<string, unknown>) => event.type === 'deployment.created'
 	},
 	deployment_succeeded: {
-		switch: (event: Record<string, unknown>) => event.type === 'deployment.succeeded',
+		event: 'deployment.succeeded',
 		parse: async (payload: Record<string, unknown>) =>
 			payload as {
 				type: string
@@ -76,7 +76,7 @@ const allVercelEvents = {
 					regions: string[]
 				}
 			},
-		event: 'deployment.succeeded'
+		switch: (event: Record<string, unknown>) => event.type === 'deployment.succeeded'
 	}
 }
 
@@ -102,9 +102,6 @@ export function createVercelWebhookProvider<
 		},
 		TEnableArgs
 	>({
-		async verify({ request: _request }) {
-			return true // TODO: Add verification
-		},
 		async enable(args: TEnableArgs, { webhookUrl }: { webhookUrl: string }) {
 			const { vercelApiKey, projectId, teamId } = await getEnableArgs(args)
 
@@ -113,20 +110,20 @@ export function createVercelWebhookProvider<
 			})
 
 			await vercel.webhooks.createWebhook({
-				teamId,
 				requestBody: {
-					url: webhookUrl,
 					events: [...new Set(events.map(event => allVercelEvents[event].event))] as Events[],
-					projectIds: [projectId]
-				}
+					projectIds: [projectId],
+					url: webhookUrl
+				},
+				teamId
 			})
 		},
 		events: Object.fromEntries(
 			events.map(event => [
 				event,
 				{
-					switch: allVercelEvents[event].switch,
-					parse: allVercelEvents[event].parse
+					parse: allVercelEvents[event].parse,
+					switch: allVercelEvents[event].switch
 				}
 			])
 		) as {
@@ -136,6 +133,9 @@ export function createVercelWebhookProvider<
 					payload: Record<string, unknown>
 				) => Promise<Awaited<ReturnType<(typeof allVercelEvents)[K]['parse']>>>
 			}
+		},
+		async verify({ request: _request }) {
+			return true // TODO: Add verification
 		}
 	})
 }

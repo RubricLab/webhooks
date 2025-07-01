@@ -1,3 +1,4 @@
+- [2025-07-01] [run format](https://github.com/RubricLab/webhooks/commit/a5cc34ff0be0fc65a1343c4dc928dcce1c480e02)
 - [2025-07-01] [consolidate biome format script](https://github.com/RubricLab/webhooks/commit/46227314d2c4e526766689c8559a974d45160301)
 - [2025-06-25] [Use package post-commit hooks](https://github.com/RubricLab/webhooks/commit/ecf7b1268171327a21232e6e142048a34bd2410a)
 - [2025-02-14] [fix build](https://github.com/RubricLab/webhooks/commit/b61b6a6c3f6177a4fc2308399dc569f86c389cff)

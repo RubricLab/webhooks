@@ -3,7 +3,7 @@ import { createWebhookProvider } from '../utils'
 
 const allBrexEvents = {
 	expense_payment_updated: {
-		switch: (event: Record<string, unknown>) => event.event_type === 'EXPENSE_PAYMENT_UPDATED',
+		event: 'EXPENSE_PAYMENT_UPDATED',
 		parse: async (payload: Record<string, unknown>) =>
 			payload as {
 				event_type: 'EXPENSE_PAYMENT_UPDATED'
@@ -60,7 +60,7 @@ const allBrexEvents = {
 				} | null
 				payment_authorization_code: string
 			},
-		event: 'EXPENSE_PAYMENT_UPDATED'
+		switch: (event: Record<string, unknown>) => event.event_type === 'EXPENSE_PAYMENT_UPDATED'
 	}
 }
 
@@ -84,23 +84,20 @@ export function createBrexWebhookProvider<
 		},
 		TEnableArgs
 	>({
-		async verify({ request: _request }) {
-			return true // TODO: Add verification
-		},
 		async enable(args: TEnableArgs, { webhookUrl }: { webhookUrl: string }) {
 			const { brexApiKey } = await getEnableArgs(args)
 
 			const response = await fetch('https://platform.brexapis.com/v1/webhooks', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					'Idempotency-Key': webhookSecret,
-					Authorization: `Bearer ${brexApiKey}`
-				},
 				body: JSON.stringify({
-					url: webhookUrl,
-					event_types: [...new Set(events.map(event => allBrexEvents[event].event))]
-				})
+					event_types: [...new Set(events.map(event => allBrexEvents[event].event))],
+					url: webhookUrl
+				}),
+				headers: {
+					Authorization: `Bearer ${brexApiKey}`,
+					'Content-Type': 'application/json',
+					'Idempotency-Key': webhookSecret
+				},
+				method: 'POST'
 			})
 
 			if (!response.ok) {
@@ -111,8 +108,8 @@ export function createBrexWebhookProvider<
 			events.map(event => [
 				event,
 				{
-					switch: allBrexEvents[event].switch,
-					parse: allBrexEvents[event].parse
+					parse: allBrexEvents[event].parse,
+					switch: allBrexEvents[event].switch
 				}
 			])
 		) as {
@@ -122,6 +119,9 @@ export function createBrexWebhookProvider<
 					payload: Record<string, unknown>
 				) => Promise<Awaited<ReturnType<(typeof allBrexEvents)[K]['parse']>>>
 			}
+		},
+		async verify({ request: _request }) {
+			return true // TODO: Add verification
 		}
 	})
 }

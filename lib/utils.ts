@@ -24,9 +24,9 @@ export function createWebhookProvider<
 	}
 }) {
 	return {
-		verify,
 		enable,
-		events
+		events,
+		verify
 	}
 }
 
@@ -57,6 +57,17 @@ export function createWebhooks<
 	actions: WebhookActions<WebhookProviders>
 } {
 	return {
+		actions: {
+			enableWebhook: async ({ provider, args }) => {
+				const webhookProvider = webhookProviders[provider]
+				if (!webhookProvider) {
+					throw new Error(`Provider ${String(provider)} not found`)
+				}
+				return webhookProvider.enable(args, {
+					webhookUrl: `${webhookUrl}/webhooks/${String(provider)}`
+				})
+			}
+		},
 		routes: {
 			async POST(
 				request: Request,
@@ -102,23 +113,12 @@ export function createWebhooks<
 				}
 
 				await eventHandler({
-					type: `${String(provider)}/${String(event)}`,
-					data: payload
+					data: payload,
+					type: `${String(provider)}/${String(event)}`
 				})
 
 				return new Response(`Thank you for your webhook ${String(provider)}!`, {
 					status: 200
-				})
-			}
-		},
-		actions: {
-			enableWebhook: async ({ provider, args }) => {
-				const webhookProvider = webhookProviders[provider]
-				if (!webhookProvider) {
-					throw new Error(`Provider ${String(provider)} not found`)
-				}
-				return webhookProvider.enable(args, {
-					webhookUrl: `${webhookUrl}/webhooks/${String(provider)}`
 				})
 			}
 		}
